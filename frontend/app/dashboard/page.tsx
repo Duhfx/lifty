@@ -22,6 +22,7 @@ import {
     User
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { InstallPrompt } from '@/components/InstallPrompt';
 
 // Componente Card Sóbrio
 const NeoCard = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
@@ -97,6 +98,7 @@ export default function DashboardPage() {
 
     return (
         <DashboardLayout>
+            <InstallPrompt />
             <style jsx global>{`
                 .no-scrollbar::-webkit-scrollbar {
                     display: none;
@@ -168,10 +170,10 @@ export default function DashboardPage() {
                 <section>
                     <div className="flex items-center justify-between mb-3 px-1">
                         <h3 className="text-base font-bold text-slate-900">
-                            {currentSession ? 'Em Andamento' : 'Seus Treinos'}
+                            {currentSession ? 'Em Andamento' : 'Seus Programas'}
                         </h3>
                         {!currentSession && (
-                            <button onClick={() => router.push('/workouts')} className="text-slate-900 text-xs font-bold hover:underline">Ver todos</button>
+                            <button onClick={() => router.push('/programs')} className="text-slate-900 text-xs font-bold hover:underline">Ver todos</button>
                         )}
                     </div>
                     
@@ -269,9 +271,9 @@ export default function DashboardPage() {
                         </div>
                     ) : (
                         <div className="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                            <p className="text-sm text-slate-500 mb-2">Nenhum treino encontrado</p>
-                            <button onClick={() => router.push('/workouts/new')} className="text-sm font-bold text-indigo-600 hover:underline">
-                                Criar Primeiro Treino
+                            <p className="text-sm text-slate-500 mb-2">Nenhum programa encontrado</p>
+                            <button onClick={() => router.push('/programs/new')} className="text-sm font-bold text-indigo-600 hover:underline">
+                                Criar Primeiro Programa
                             </button>
                         </div>
                     )}
