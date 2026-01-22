@@ -76,6 +76,7 @@ All tables have RLS policies restricting access to owner's data only.
 
 ### Backend (`backend/.env`)
 - `PORT` - Server port (default: 3001)
+- `FRONTEND_URL` - Frontend URL for generating share links (e.g., https://lifty.app in production)
 - `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`
 - `JWT_SECRET`, `JWT_EXPIRATION`
 - `ALLOWED_ORIGINS` - CORS whitelist

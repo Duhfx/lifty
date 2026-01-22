@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '@/lib/supabase';
+import { offlineQueue } from '@/lib/offlineQueue';
 
 interface Set {
     id: string;
@@ -98,8 +99,15 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
 
     createSession: async (workoutId: string) => {
         try {
+            console.log('🟢 [FRONTEND] Creating session for workout:', workoutId);
+
             const { data: { session } } = await supabase.auth.getSession();
-            if (!session) throw new Error('Not authenticated');
+            if (!session) {
+                console.error('🔴 [FRONTEND] Not authenticated');
+                throw new Error('Not authenticated');
+            }
+
+            console.log('🟢 [FRONTEND] User authenticated, calling API...');
 
             const response = await fetch(`${API_URL}/sessions`, {
                 method: 'POST',
@@ -110,12 +118,22 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
                 body: JSON.stringify({ workout_id: workoutId }),
             });
 
-            if (!response.ok) throw new Error('Failed to create session');
+            console.log('🟢 [FRONTEND] API Response status:', response.status);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('🔴 [FRONTEND] API Error:', errorText);
+                throw new Error('Failed to create session');
+            }
+
             const newSession = await response.json();
+            console.log('✅ [FRONTEND] Session created successfully:', newSession);
+
             set({ currentSession: newSession });
             get().startTimer();
             return newSession;
         } catch (error: any) {
+            console.error('🔴 [FRONTEND] Create session error:', error);
             set({ error: error.message });
             throw error;
         }
@@ -227,6 +245,20 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         } catch (error: any) {
             // Silent fail for auto-save - we don't want to interrupt the user
             console.error('Auto-save failed:', error);
+
+            // Adicionar à fila offline
+            const validSets = setsData.filter(set => set.reps > 0 && set.weight > 0);
+            for (const setData of validSets) {
+                offlineQueue.add({
+                    endpoint: `${API_URL}/sessions/${sessionId}/sets`,
+                    method: 'POST',
+                    body: {
+                        workout_exercise_id: setData.exerciseId,
+                        reps: setData.reps,
+                        weight: setData.weight,
+                    },
+                });
+            }
         }
     },
 

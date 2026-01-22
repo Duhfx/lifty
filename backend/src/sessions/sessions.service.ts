@@ -78,6 +78,11 @@ export class SessionsService {
   async create(userId: string, createSessionDto: CreateSessionDto) {
     const supabase = this.supabaseService.getClient();
 
+    console.log('🔵 [CREATE SESSION] Starting...', {
+      userId,
+      workoutId: createSessionDto.workout_id,
+    });
+
     // Verify workout exists and belongs to user
     const { data: workout, error: workoutError } = await supabase
       .from('workouts')
@@ -86,7 +91,13 @@ export class SessionsService {
       .eq('user_id', userId)
       .single();
 
+    console.log('🔵 [CREATE SESSION] Workout verification:', {
+      workout,
+      workoutError,
+    });
+
     if (workoutError || !workout) {
+      console.error('🔴 [CREATE SESSION] Workout not found');
       throw new NotFoundException('Workout not found');
     }
 
@@ -101,8 +112,14 @@ export class SessionsService {
       .select()
       .single();
 
-    if (error) throw new Error(error.message);
+    console.log('🔵 [CREATE SESSION] Insert result:', { session, error });
 
+    if (error) {
+      console.error('🔴 [CREATE SESSION] Insert failed:', error);
+      throw new Error(error.message);
+    }
+
+    console.log('✅ [CREATE SESSION] Success! Session ID:', session.id);
     return this.findOne(session.id, userId);
   }
 
@@ -293,6 +310,11 @@ export class SessionsService {
   async getLastSessionData(workoutId: string, userId: string) {
     const supabase = this.supabaseService.getClient();
 
+    console.log('🟡 [GET LAST SESSION DATA] Starting...', {
+      workoutId,
+      userId,
+    });
+
     // Verify workout exists and belongs to user
     const { data: workout, error: workoutError } = await supabase
       .from('workouts')
@@ -302,13 +324,14 @@ export class SessionsService {
       .single();
 
     if (workoutError || !workout) {
+      console.error('🔴 [GET LAST SESSION DATA] Workout not found');
       throw new NotFoundException('Workout not found');
     }
 
     // Find last completed session for this workout
     const { data: lastSession, error: sessionError } = await supabase
       .from('workout_sessions')
-      .select('id, executed_at')
+      .select('id, executed_at, duration_minutes')
       .eq('workout_id', workoutId)
       .eq('user_id', userId)
       .not('duration_minutes', 'is', null)
@@ -318,8 +341,14 @@ export class SessionsService {
       .limit(1)
       .maybeSingle();
 
+    console.log('🟡 [GET LAST SESSION DATA] Last session query:', {
+      lastSession,
+      sessionError,
+    });
+
     // If no previous session, return empty object
     if (sessionError || !lastSession) {
+      console.log('🟡 [GET LAST SESSION DATA] No previous session found');
       return {};
     }
 
@@ -331,7 +360,14 @@ export class SessionsService {
       .order('workout_exercise_id', { ascending: true })
       .order('set_number', { ascending: true });
 
+    console.log('🟡 [GET LAST SESSION DATA] Sets query:', {
+      sessionId: lastSession.id,
+      setsCount: sets?.length || 0,
+      setsError,
+    });
+
     if (setsError || !sets) {
+      console.log('🟡 [GET LAST SESSION DATA] No sets found');
       return {};
     }
 
@@ -350,6 +386,11 @@ export class SessionsService {
         reps: set.reps,
         weight: set.weight,
       });
+    });
+
+    console.log('✅ [GET LAST SESSION DATA] Success!', {
+      exercisesCount: Object.keys(exerciseData).length,
+      data: exerciseData,
     });
 
     return exerciseData;
