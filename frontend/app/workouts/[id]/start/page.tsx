@@ -111,7 +111,7 @@ export default function WorkoutStartPage({ params }: { params: Promise<{ id: str
             }
             setIsSaving(false);
         };
-        const interval = setInterval(30000, saveProgress);
+        const interval = setInterval(saveProgress, 30000);
         return () => clearInterval(interval);
     }, [currentSession, exerciseInputs, completedExercises]);
 
