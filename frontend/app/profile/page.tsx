@@ -212,7 +212,7 @@ export default function ProfilePage() {
                         />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wide ml-1 flex items-center gap-1">
                                 <Calendar size={12} /> Nascimento
@@ -221,7 +221,7 @@ export default function ProfilePage() {
                                 type="date"
                                 value={birthDate}
                                 onChange={(e) => setBirthDate(e.target.value)}
-                                className="bg-slate-50 border-slate-100 h-11 text-sm"
+                                className="bg-slate-50 border-slate-100 h-11 text-sm w-full"
                             />
                         </div>
                         <div className="space-y-1.5">
