@@ -8,7 +8,11 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
-export function InstallPrompt() {
+interface InstallPromptProps {
+  context?: 'dashboard' | 'share';
+}
+
+export function InstallPrompt({ context = 'dashboard' }: InstallPromptProps) {
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
 
@@ -17,9 +21,21 @@ export function InstallPrompt() {
       e.preventDefault();
       setInstallPrompt(e as BeforeInstallPromptEvent);
 
-      // Mostrar apenas se usuário não dismissou antes
-      const dismissed = localStorage.getItem('pwa-install-dismissed');
-      if (!dismissed) {
+      // Verificar cooldown (7 dias)
+      const dismissedUntil = localStorage.getItem('pwa-install-dismissed-until');
+      const now = Date.now();
+
+      if (dismissedUntil && now < parseInt(dismissedUntil)) {
+        return;
+      }
+
+      // Se for contexto share, esperar 5 segundos
+      if (context === 'share') {
+        const timer = setTimeout(() => {
+          setShowPrompt(true);
+        }, 5000);
+        return () => clearTimeout(timer);
+      } else {
         setShowPrompt(true);
       }
     };
@@ -32,7 +48,7 @@ export function InstallPrompt() {
     }
 
     return () => window.removeEventListener('beforeinstallprompt', handler);
-  }, []);
+  }, [context]);
 
   const handleInstall = async () => {
     if (!installPrompt) return;
@@ -46,11 +62,27 @@ export function InstallPrompt() {
   };
 
   const handleDismiss = () => {
-    localStorage.setItem('pwa-install-dismissed', 'true');
+    const sevenDaysFromNow = Date.now() + (7 * 24 * 60 * 60 * 1000);
+    localStorage.setItem('pwa-install-dismissed-until', sevenDaysFromNow.toString());
     setShowPrompt(false);
   };
 
   if (!showPrompt) return null;
+
+  const getMessage = () => {
+    if (context === 'share') {
+      return {
+        title: 'Instalar Lifty',
+        subtitle: 'Instale para importar este programa e acompanhar seus treinos'
+      };
+    }
+    return {
+      title: 'Instalar Lifty',
+      subtitle: 'Acesso rápido e offline'
+    };
+  };
+
+  const message = getMessage();
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-slate-900 border-t border-slate-700 animate-slideUp">
@@ -60,8 +92,8 @@ export function InstallPrompt() {
             <Download size={20} className="text-white" />
           </div>
           <div className="flex-1">
-            <p className="text-white font-medium text-sm">Instalar Lifty</p>
-            <p className="text-slate-400 text-xs">Acesso rápido e offline</p>
+            <p className="text-white font-medium text-sm">{message.title}</p>
+            <p className="text-slate-400 text-xs">{message.subtitle}</p>
           </div>
         </div>
 

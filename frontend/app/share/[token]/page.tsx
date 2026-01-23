@@ -16,6 +16,8 @@ import {
     UserPlus
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { InstallPrompt } from '@/components/InstallPrompt';
+import { IOSInstallBanner } from '@/components/IOSInstallBanner';
 
 // Componente Card Sóbrio
 const NeoCard = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
@@ -262,6 +264,9 @@ export default function SharedProgramPage({ params }: { params: Promise<{ token:
                         </div>
                     </NeoCard>
                 )}
+                {/* Install Prompts */}
+                <InstallPrompt context="share" />
+                <IOSInstallBanner />
             </main>
         </div>
     );

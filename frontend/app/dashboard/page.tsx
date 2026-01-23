@@ -105,7 +105,7 @@ export default function DashboardPage() {
 
     return (
         <DashboardLayout>
-            <InstallPrompt />
+            <InstallPrompt context="dashboard" />
             <style jsx global>{`
                 .no-scrollbar::-webkit-scrollbar {
                     display: none;
