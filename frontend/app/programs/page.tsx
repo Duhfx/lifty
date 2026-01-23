@@ -76,8 +76,9 @@ export default function ProgramsPage() {
         e.stopPropagation();
         try {
             await activateProgram(id);
-            await fetchPrograms(false);
+            // UI já atualizada via store
         } catch (error) {
+            console.error('Erro ao ativar programa:', error);
             alert('Erro ao ativar programa');
         }
     };
@@ -87,8 +88,9 @@ export default function ProgramsPage() {
         if (!confirm('Arquivar este programa?')) return;
         try {
             await updateProgram(id, { is_archived: true });
-            await fetchPrograms(false);
+            // UI já atualizada via store
         } catch (error) {
+            console.error('Erro ao arquivar programa:', error);
             alert('Erro ao arquivar programa');
         }
     };
@@ -97,8 +99,9 @@ export default function ProgramsPage() {
         e.stopPropagation();
         try {
             await updateProgram(id, { is_archived: false });
-            await fetchPrograms(false);
+            // UI já atualizada via store
         } catch (error) {
+            console.error('Erro ao desarquivar programa:', error);
             alert('Erro ao desarquivar programa');
         }
     };
@@ -108,8 +111,9 @@ export default function ProgramsPage() {
         if (!confirm('Deletar este programa? Esta ação não pode ser desfeita.')) return;
         try {
             await deleteProgram(id);
-            await fetchPrograms(false);
+            // UI já atualizada via store
         } catch (error) {
+            console.error('Erro ao deletar programa:', error);
             alert('Erro ao deletar programa');
         }
     };

@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link';
 import { useAuthStore } from '@/store/authStore';
+import { useWorkoutStore } from '@/store/workoutStore';
+import { useSessionStore } from '@/store/sessionStore';
 import {
     LayoutDashboard,
     Dumbbell,
@@ -29,6 +32,8 @@ export function DashboardLayout({ children }: LayoutProps) {
     const pathname = usePathname();
     const { user, loading, signOut } = useAuthStore();
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+    const fetchWorkouts = useWorkoutStore(s => s.fetchWorkouts);
+    const fetchSessions = useSessionStore(s => s.fetchSessions);
 
     useEffect(() => {
         const saved = localStorage.getItem('sidebarCollapsed');
@@ -44,6 +49,32 @@ export function DashboardLayout({ children }: LayoutProps) {
     useEffect(() => {
         if (!loading && !user) router.push('/login');
     }, [user, loading, router]);
+
+    // Prefetching inteligente em background
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+
+        // Usar requestIdleCallback para não bloquear thread principal (com fallback)
+        const callback = () => {
+            // Prefetch baseado na rota atual
+            if (pathname === '/dashboard') {
+                // Usuário no dashboard, provavelmente vai para programas
+                fetchWorkouts();
+            } else if (pathname === '/programs') {
+                // Usuário em programas, provavelmente volta ao dashboard
+                fetchSessions();
+            }
+        };
+
+        if ('requestIdleCallback' in window) {
+            const idleCallback = requestIdleCallback(callback, { timeout: 2000 });
+            return () => cancelIdleCallback(idleCallback);
+        } else {
+            // Fallback para navegadores sem suporte
+            const timeout = setTimeout(callback, 100);
+            return () => clearTimeout(timeout);
+        }
+    }, [pathname, fetchWorkouts, fetchSessions]);
 
     if (loading) {
         return (
@@ -104,26 +135,32 @@ export function DashboardLayout({ children }: LayoutProps) {
                     {navItems.map((item) => {
                         const active = isActive(item.path);
                         return (
-                            <button
+                            <Link
                                 key={item.path}
-                                onClick={() => router.push(item.path)}
+                                href={item.path}
+                                prefetch={true}
                                 className={`p-3 rounded-lg transition-all duration-200 flex flex-col items-center gap-1 ${
-                                    active ? 'text-slate-900 bg-slate-100' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+                                    active ? 'text-slate-900 bg-slate-100 scale-105' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
                                 }`}
+                                onMouseEnter={() => {
+                                    if (item.path === '/programs') fetchWorkouts();
+                                    if (item.path === '/dashboard') fetchSessions();
+                                }}
                             >
                                 <item.icon size={22} strokeWidth={active ? 2.5 : 2} />
-                            </button>
+                            </Link>
                         );
                     })}
-                    
-                    <button
-                        onClick={() => router.push('/profile')} 
+
+                    <Link
+                        href="/profile"
+                        prefetch={true}
                         className={`p-3 rounded-lg transition-all duration-200 flex flex-col items-center gap-1 ${
-                            isActive('/profile') ? 'text-slate-900 bg-slate-100' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+                            isActive('/profile') ? 'text-slate-900 bg-slate-100 scale-105' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
                         }`}
                     >
                         <User size={22} strokeWidth={isActive('/profile') ? 2.5 : 2} />
-                    </button>
+                    </Link>
                 </nav>
             </div>
 

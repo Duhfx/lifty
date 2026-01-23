@@ -46,9 +46,13 @@ export default function DashboardPage() {
     const userName = user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Atleta';
 
     useEffect(() => {
-        fetchWorkouts();
-        fetchSessions();
-        fetchNextWorkout();
+        // Disparar fetches em paralelo, mas não bloquear
+        // Se cache existe, UI renderiza imediatamente
+        Promise.all([
+            fetchWorkouts(),
+            fetchSessions(),
+            fetchNextWorkout()
+        ]);
     }, [fetchWorkouts, fetchSessions, fetchNextWorkout]);
 
     // Scroll to next suggested workout (instant, before paint)
@@ -66,7 +70,7 @@ export default function DashboardPage() {
     if (activeProgram) {
         activeWorkouts = activeWorkouts.filter(w => w.program_id === activeProgram.id);
     }
-    
+
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
     const thisWeekSessions = sessions.filter(s => new Date(s.executed_at) >= oneWeekAgo);
@@ -76,7 +80,7 @@ export default function DashboardPage() {
     const getLastPerformedText = (workoutId: string) => {
         const lastSession = sessions.find(s => s.workout_id === workoutId);
         if (!lastSession) return 'Nunca realizado';
-        
+
         const diff = differenceInDays(new Date(), new Date(lastSession.executed_at));
         if (diff === 0) return 'Hoje';
         if (diff === 1) return 'Ontem';
@@ -91,8 +95,11 @@ export default function DashboardPage() {
         return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
     };
 
-    const isLoading = workoutsLoading || sessionsLoading;
-    
+    // Mostrar skeleton APENAS se loading E não tem dados em cache
+    const hasWorkoutsData = workouts.length > 0;
+    const hasSessionsData = sessions.length > 0;
+    const isInitialLoad = (workoutsLoading || sessionsLoading) && !hasWorkoutsData && !hasSessionsData;
+
     // Find active workout if session exists
     const currentWorkout = currentSession ? workouts.find(w => w.id === currentSession.workout_id) : null;
 
@@ -176,8 +183,8 @@ export default function DashboardPage() {
                             <button onClick={() => router.push('/programs')} className="text-slate-900 text-xs font-bold hover:underline">Ver todos</button>
                         )}
                     </div>
-                    
-                    {isLoading ? (
+
+                    {isInitialLoad ? (
                         <div className="h-40 rounded-xl bg-slate-100 animate-pulse" />
                     ) : currentSession && currentWorkout ? (
                         /* CARD CONTINUAR TREINO */

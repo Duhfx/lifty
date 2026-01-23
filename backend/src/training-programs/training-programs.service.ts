@@ -309,6 +309,7 @@ export class TrainingProgramsService {
       endDate: program.end_date,
       creatorEmail: program.creator_email,
       creatorName: program.creator_name,
+      creatorAvatar: program.creator_avatar,
       workoutCount: program.workout_count,
       workouts: (program.workouts || []).map((w: any) => ({
         id: w.id,

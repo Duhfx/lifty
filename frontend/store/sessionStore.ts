@@ -32,8 +32,11 @@ interface SessionStore {
     timerSeconds: number;
     timerRunning: boolean;
     lastSessionData: LastSessionData | null;
+    lastFetched: number | null;
+    cacheTimeout: number;
 
     fetchSessions: () => Promise<void>;
+    hasFreshCache: () => boolean;
     getSession: (id: string) => Promise<Session | null>;
     createSession: (workoutId: string) => Promise<Session>;
     addSet: (sessionId: string, exerciseId: string, reps: number, weight: number) => Promise<Set>;
@@ -61,9 +64,31 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     timerSeconds: 0,
     timerRunning: false,
     lastSessionData: null,
+    lastFetched: null,
+    cacheTimeout: 5 * 60 * 1000, // 5 minutos
+
+    hasFreshCache: () => {
+        const { lastFetched, cacheTimeout } = get();
+        if (!lastFetched) return false;
+        return Date.now() - lastFetched < cacheTimeout;
+    },
 
     fetchSessions: async () => {
-        set({ loading: true, error: null });
+        const { sessions, hasFreshCache } = get();
+
+        // Se cache está fresco, pular fetch
+        if (hasFreshCache() && sessions.length > 0) {
+            return;
+        }
+
+        // Se tem cache mas está stale, NÃO mostrar loading
+        // (padrão stale-while-revalidate)
+        const hasStaleCache = sessions.length > 0;
+
+        if (!hasStaleCache) {
+            set({ loading: true });
+        }
+
         try {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) throw new Error('Not authenticated');
@@ -74,9 +99,20 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
 
             if (!response.ok) throw new Error('Failed to fetch sessions');
             const data = await response.json();
-            set({ sessions: data, loading: false });
+            set({
+                sessions: data,
+                loading: false,
+                error: null,
+                lastFetched: Date.now()
+            });
         } catch (error: any) {
-            set({ error: error.message, loading: false });
+            // Se fetch falha mas temos cache, manter mostrando
+            if (!hasStaleCache) {
+                set({ error: error.message, loading: false });
+            } else {
+                // Silenciosamente falha em background
+                console.warn('Background revalidation failed:', error);
+            }
         }
     },
 
@@ -267,7 +303,8 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) throw new Error('Not authenticated');
 
-            const duration = Math.floor(get().timerSeconds / 60);
+            // Garantir duração mínima de 1 minuto
+            const duration = Math.max(1, Math.floor(get().timerSeconds / 60));
 
             const response = await fetch(`${API_URL}/sessions/${sessionId}/finish`, {
                 method: 'PATCH',

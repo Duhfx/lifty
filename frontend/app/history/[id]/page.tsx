@@ -5,16 +5,14 @@ import { useRouter } from 'next/navigation';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { useSessionStore } from '@/store/sessionStore';
 import { Button } from '@/components/ui/button';
-import { 
-    ChevronLeft, 
-    Trash2, 
-    Calendar, 
-    Clock, 
-    Dumbbell, 
+import {
+    ChevronLeft,
+    Trash2,
+    Calendar,
+    Clock,
+    Dumbbell,
     FileText,
-    Weight,
-    ListChecks,
-    History
+    ListChecks
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -106,10 +104,6 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
 
     const getTotalSets = () => session?.sets?.length || 0;
 
-    const getTotalVolume = () => {
-        return session?.sets?.reduce((acc, set) => acc + (set.reps * set.weight), 0) || 0;
-    };
-
     if (loading) {
         return (
             <DashboardLayout>
@@ -156,21 +150,16 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
                 </div>
 
                 {/* --- QUICK STATS --- */}
-                <div className="grid grid-cols-3 gap-3">
-                    <StatBox 
-                        label="Duração" 
-                        value={session.duration_minutes ? `${session.duration_minutes}m` : '--'} 
-                        icon={Clock} 
+                <div className="grid grid-cols-2 gap-3">
+                    <StatBox
+                        label="Duração"
+                        value={session.duration_minutes ? `${session.duration_minutes}m` : '--'}
+                        icon={Clock}
                     />
-                    <StatBox 
-                        label="Sets" 
-                        value={getTotalSets()} 
-                        icon={ListChecks} 
-                    />
-                    <StatBox 
-                        label="Volume" 
-                        value={`${(getTotalVolume() / 1000).toFixed(1)}t`} 
-                        icon={Weight} 
+                    <StatBox
+                        label="Sets"
+                        value={getTotalSets()}
+                        icon={ListChecks}
                     />
                 </div>
 
@@ -198,19 +187,11 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
 
                             return (
                                 <NeoCard key={exercise.id} className="p-0 overflow-hidden">
-                                    <div className="p-4 border-b border-slate-100 flex items-start justify-between bg-white">
-                                        <div>
-                                            <h3 className="font-bold text-base text-slate-900">{exercise.name}</h3>
-                                            {exercise.muscle_group && (
-                                                <span className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">{exercise.muscle_group}</span>
-                                            )}
-                                        </div>
-                                        <div className="text-right">
-                                            <span className="text-[10px] font-bold text-slate-400 uppercase block">Total</span>
-                                            <span className="text-sm font-bold text-slate-900">
-                                                {exerciseSets.reduce((acc, s) => acc + (s.reps * s.weight), 0)}kg
-                                            </span>
-                                        </div>
+                                    <div className="p-4 border-b border-slate-100 bg-white">
+                                        <h3 className="font-bold text-base text-slate-900">{exercise.name}</h3>
+                                        {exercise.muscle_group && (
+                                            <span className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">{exercise.muscle_group}</span>
+                                        )}
                                     </div>
                                     
                                     <div className="divide-y divide-slate-100">

@@ -26,9 +26,12 @@ interface WorkoutStore {
     nextWorkout: Workout | null;
     loading: boolean;
     error: string | null;
+    lastFetched: number | null;
+    cacheTimeout: number;
 
     fetchWorkouts: (archived?: boolean, programId?: string) => Promise<void>;
     fetchNextWorkout: () => Promise<void>;
+    hasFreshCache: () => boolean;
     getWorkout: (id: string) => Promise<Workout | null>;
     createWorkout: (data: { name: string; description?: string; exercises?: Omit<Exercise, 'id' | 'order_index'>[] }) => Promise<Workout>;
     updateWorkout: (id: string, data: { name?: string; description?: string }) => Promise<void>;
@@ -47,6 +50,14 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
     nextWorkout: null,
     loading: false,
     error: null,
+    lastFetched: null,
+    cacheTimeout: 5 * 60 * 1000, // 5 minutos
+
+    hasFreshCache: () => {
+        const { lastFetched, cacheTimeout } = get();
+        if (!lastFetched) return false;
+        return Date.now() - lastFetched < cacheTimeout;
+    },
 
     fetchNextWorkout: async () => {
         try {
@@ -69,7 +80,21 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
     },
 
     fetchWorkouts: async (archived = false, programId?: string) => {
-        set({ loading: true, error: null });
+        const { workouts, hasFreshCache } = get();
+
+        // Se cache está fresco, pular fetch
+        if (hasFreshCache() && workouts.length > 0) {
+            return;
+        }
+
+        // Se tem cache mas está stale, NÃO mostrar loading
+        // (padrão stale-while-revalidate)
+        const hasStaleCache = workouts.length > 0;
+
+        if (!hasStaleCache) {
+            set({ loading: true });
+        }
+
         try {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) throw new Error('Not authenticated');
@@ -77,7 +102,7 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
             const queryParams = new URLSearchParams({
                 archived: String(archived),
             });
-            
+
             if (programId) {
                 queryParams.append('programId', programId);
             }
@@ -91,9 +116,20 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
             if (!response.ok) throw new Error('Failed to fetch workouts');
 
             const data = await response.json();
-            set({ workouts: data, loading: false });
+            set({
+                workouts: data,
+                loading: false,
+                error: null,
+                lastFetched: Date.now()
+            });
         } catch (error: any) {
-            set({ error: error.message, loading: false });
+            // Se fetch falha mas temos cache, manter mostrando
+            if (!hasStaleCache) {
+                set({ error: error.message, loading: false });
+            } else {
+                // Silenciosamente falha em background
+                console.warn('Background revalidation failed:', error);
+            }
         }
     },
 
@@ -169,6 +205,12 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
     },
 
     deleteWorkout: async (id) => {
+        const { workouts } = get();
+        const previousWorkouts = [...workouts]; // Backup para rollback
+
+        // Update otimista: remover imediatamente da UI
+        set({ workouts: workouts.filter(w => w.id !== id) });
+
         try {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) throw new Error('Not authenticated');
@@ -181,17 +223,25 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
             });
 
             if (!response.ok) throw new Error('Failed to delete workout');
-
-            set((state) => ({
-                workouts: state.workouts.filter((w) => w.id !== id),
-            }));
+            // Sucesso - já removido da UI
         } catch (error: any) {
-            set({ error: error.message });
+            // Rollback em caso de erro
+            set({ workouts: previousWorkouts, error: error.message });
             throw error;
         }
     },
 
     archiveWorkout: async (id, archived) => {
+        const { workouts } = get();
+        const previousWorkouts = [...workouts];
+
+        // Update otimista
+        set({
+            workouts: workouts.map(w =>
+                w.id === id ? { ...w, is_archived: archived } : w
+            )
+        });
+
         try {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) throw new Error('Not authenticated');
@@ -206,10 +256,10 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
             });
 
             if (!response.ok) throw new Error('Failed to archive workout');
-
-            await get().fetchWorkouts(archived);
+            // Sucesso - já atualizado na UI
         } catch (error: any) {
-            set({ error: error.message });
+            // Rollback em caso de erro
+            set({ workouts: previousWorkouts, error: error.message });
             throw error;
         }
     },

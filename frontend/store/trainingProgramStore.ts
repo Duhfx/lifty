@@ -39,6 +39,8 @@ interface SharedProgram {
     startDate?: string;
     endDate?: string;
     creatorEmail: string;
+    creatorName?: string;
+    creatorAvatar?: string;
     workoutCount: number;
     workouts: Array<{
         id: string;

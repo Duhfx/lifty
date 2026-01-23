@@ -86,16 +86,16 @@ export default function SharedProgramPage({ params }: { params: Promise<{ token:
         return (
             <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
                 <div className="text-center max-w-sm">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-300 shadow-sm">
-                        <Dumbbell size={32} />
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-xl bg-slate-900 flex items-center justify-center shadow-md">
+                        <Dumbbell size={32} className="text-white" />
                     </div>
                     <h1 className="text-lg font-bold text-slate-900 mb-2">Programa não encontrado</h1>
                     <p className="text-sm text-slate-500 mb-6">
                         O link pode ter expirado ou sido removido pelo criador.
                     </p>
-                    <Button 
-                        onClick={() => router.push('/')} 
-                        variant="outline" 
+                    <Button
+                        onClick={() => router.push('/')}
+                        variant="outline"
                         className="rounded-xl border-slate-200"
                     >
                         Voltar para Home
@@ -113,7 +113,7 @@ export default function SharedProgramPage({ params }: { params: Promise<{ token:
             <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200">
                 <div className="max-w-md mx-auto px-6 py-3 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-teal-500 flex items-center justify-center shadow-sm">
+                        <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center shadow-sm">
                             <Dumbbell className="text-white w-4 h-4" />
                         </div>
                         <span className="text-lg font-bold tracking-tight">Lifty</span>
@@ -136,10 +136,25 @@ export default function SharedProgramPage({ params }: { params: Promise<{ token:
                 
                 {/* --- HERO SUMMARY --- */}
                 <div className="text-center space-y-6">
-                    <div className="space-y-2">
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-slate-200 text-[10px] font-bold uppercase tracking-wider text-slate-500 shadow-sm">
-                            Compartilhado por {program.creatorName || program.creatorEmail?.split('@')[0]}
-                        </span>
+                    <div className="space-y-4">
+                        {/* Creator Avatar and Name */}
+                        <div className="flex flex-col items-center gap-3">
+                            {program.creatorAvatar ? (
+                                <img
+                                    src={program.creatorAvatar}
+                                    alt={program.creatorName || 'Criador'}
+                                    className="w-16 h-16 rounded-full border-2 border-slate-200 shadow-sm object-cover"
+                                />
+                            ) : (
+                                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-teal-500 flex items-center justify-center text-white font-bold text-xl shadow-sm border-2 border-slate-200">
+                                    {(program.creatorName || program.creatorEmail?.split('@')[0] || 'U')[0].toUpperCase()}
+                                </div>
+                            )}
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-slate-200 text-[10px] font-bold uppercase tracking-wider text-slate-500 shadow-sm">
+                                Compartilhado por {program.creatorName || program.creatorEmail?.split('@')[0]}
+                            </span>
+                        </div>
+
                         <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 leading-tight">
                             {program.programName}
                         </h1>

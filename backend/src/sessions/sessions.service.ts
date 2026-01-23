@@ -257,8 +257,13 @@ export class SessionsService {
     // Update session with notes and duration
     const updateData: any = {};
     if (finishSessionDto.notes) updateData.notes = finishSessionDto.notes;
-    if (finishSessionDto.duration_minutes)
-      updateData.duration_minutes = finishSessionDto.duration_minutes;
+    // Garantir duração mínima de 1 minuto
+    if (finishSessionDto.duration_minutes !== undefined) {
+      updateData.duration_minutes = Math.max(
+        1,
+        finishSessionDto.duration_minutes,
+      );
+    }
 
     if (Object.keys(updateData).length > 0) {
       const { error } = await supabase
@@ -329,13 +334,13 @@ export class SessionsService {
     }
 
     // Find last completed session for this workout
+    // Aceita sessões com duration_minutes >= 1 (sessões finalizadas)
     const { data: lastSession, error: sessionError } = await supabase
       .from('workout_sessions')
       .select('id, executed_at, duration_minutes')
       .eq('workout_id', workoutId)
       .eq('user_id', userId)
-      .not('duration_minutes', 'is', null)
-      .gt('duration_minutes', 0)
+      .gte('duration_minutes', 1)
       .order('executed_at', { ascending: false })
       .order('id', { ascending: false })
       .limit(1)

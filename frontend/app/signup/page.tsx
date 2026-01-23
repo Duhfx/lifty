@@ -65,8 +65,8 @@ export default function SignUpPage() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
-            <div className="w-full max-w-md space-y-6">
+        <div className="h-screen overflow-y-auto flex items-center justify-center p-4 bg-slate-50 overscroll-none">
+            <div className="w-full max-w-md space-y-6 my-auto">
                 
                 {/* Header */}
                 <div className="text-center space-y-2">
